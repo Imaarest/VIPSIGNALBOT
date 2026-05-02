@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI PREDICTOR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+    <style>
+      body {
+        font-family: "Share Tech Mono", monospace;
+        text-shadow: 0 0 3px rgba(57, 255, 20, 0.4);
+        background-color: #000;
+        overflow-x: hidden;
+      }
+      .cursor::after { content: "_"; animation: blink 1s step-end infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+      .hacker-input:focus { box-shadow: 0 0 15px rgba(57, 255, 20, 0.6); }
+      .blinking-red { color: #ef4444; animation: blink-red 1.5s step-end infinite; }
+      @keyframes blink-red { 50% { opacity: 0.5; } }
+      .shake { animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+      @keyframes shake {
+        10%, 90% { transform: translate3d(-1px, 0, 0); }
+        20%, 80% { transform: translate3d(2px, 0, 0); }
+        30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+        40%, 60% { transform: translate3d(4px, 0, 0); }
+      }
+      .signal-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+      .signal-card:hover:not(.locked-card) { transform: translateY(-5px); box-shadow: 0 0 25px rgba(57, 255, 20, 0.5); }
+      #chat-widget { transition: all 0.3s ease-in-out; }
+      #chat-messages::-webkit-scrollbar { width: 4px; }
+      #chat-messages::-webkit-scrollbar-track { background: #1a1a1a; }
+      #chat-messages::-webkit-scrollbar-thumb { background: #00ff00; }
+      #live-feed-container {
+        mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+      }
+      .winner-item { animation: slideInFromLeft 0.5s ease-out forwards; }
+      @keyframes slideInFromLeft {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      .btn-disabled { background-color: #4a5568 !important; cursor: not-allowed !important; color: #a0aec0 !important; }
+      .multiplier-rising { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8); color: #63b3ed; }
+      .multiplier-final { color: #48bb78; text-shadow: 0 0 20px rgba(72, 187, 120, 0.8); }
+      .custom-select-options { animation: fadeIn 0.2s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      .mine-cell { background-color: #1a202c; border-radius: 0.375rem; transition: all 0.3s ease-in-out; cursor: default; }
+      .mine-cell.safe {
+        background-image: url("https://www.freeiconspng.com/uploads/yellow-christmas-star-png-18.png");
+        background-size: 70%; background-position: center; background-repeat: no-repeat;
+        background-color: #38a169; transform: scale(1.05); box-shadow: 0 0 15px rgba(56, 161, 105, 0.7);
+      }
+      .game-console { background-color: #0d1117; border-color: #30363d; height: 8rem; }
+      .game-console p { animation: fadeInConsole 0.3s ease-in; color: #a5d6ff; }
+      .game-console p.success { color: #56d364; }
+      .game-console p.error { color: #f85149; }
+      @keyframes fadeInConsole { from { opacity: 0; } to { opacity: 1; } }
+      .penalty-gate-post { background-color: #a0aec0; }
+      .penalty-target-zone { background-color: rgba(255, 255, 255, 0.1); border: 2px dashed rgba(255, 255, 255, 0.2); transition: all 0.3s ease-in-out; }
+      .penalty-target-zone.highlight { background-color: rgba(56, 161, 105, 0.8); border-color: #f6e05e; box-shadow: 0 0 25px rgba(56, 161, 105, 0.9); }
+      .number-signal-display { color: #48bb78; text-shadow: 0 0 20px rgba(72, 187, 120, 0.8); }
+      #chicken-road-viewport { overflow: hidden; background: linear-gradient(to bottom, #1a202c, #2d3748); }
+      #chicken-road-track { transition: transform 0.2s linear; }
+      .chicken-stove { background-color: #4a5568; border: 2px solid #718096; box-shadow: 0 4px 0 #2d3748; }
+      #chicken-icon { transition: transform 0.2s ease-out; z-index: 10; }
+      .locked-card { cursor: not-allowed; pointer-events: none; }
+      .admin-input { background-color: #1a202c; border: 1px solid #4a5568; color: #a0aec0; transition: all 0.3s ease; }
+      .admin-input:focus { outline: none; border-color: #38a169; box-shadow: 0 0 10px rgba(56, 161, 105, 0.5); }
+    </style>
+  </head>
+  <body class="bg-black text-green-400">
+    <!-- Language Selector -->
+    <div id="langSelectContainer" class="fixed top-4 right-4 z-[100] hidden">
+      <select id="langSelect" class="bg-gray-900 border border-green-700 text-green-400 text-sm rounded p-1 focus:outline-none">
+        <option value="en">English</option>
+        <option value="da">پښتو / دری (Afghanistan)</option>
+        <option value="km">ភាសាខ្មែរ (Cambodia)</option>
+        <option value="ar">العربية (Arabic)</option>
+        <option value="es">Español (Spanish)</option>
+      </select>
+    </div>
+
+    <div id="main-content" class="min-h-screen flex flex-col items-center justify-center p-4">
+      <header class="text-center mb-8">
+        <h1 class="text-3xl md:text-5xl tracking-widest cursor-default">
+          <span id="typing-text">AI PREDICTOR</span><span class="cursor"></span>
+        </h1>
+      </header>
+      
+      <div id="language-selection-screen" class="w-full max-w-sm mb-8 z-[101]">
+        <h2 class="text-xl text-green-500 mb-6 tracking-widest text-center animate-pulse" data-i18n="select_language">// SELECT LANGUAGE //</h2>
+        <div class="grid grid-cols-1 gap-4">
+          <button class="main-lang-btn border border-green-700 bg-gray-900 hover:bg-green-600 hover:text-black text-green-400 py-4 rounded text-lg transition-all" data-lang="en">English</button>
+          <button class="main-lang-btn border border-green-700 bg-gray-900 hover:bg-green-600 hover:text-black text-green-400 py-4 rounded text-lg transition-all" data-lang="da">Afghanistan (پښتو / دری)</button>
+          <button class="main-lang-btn border border-green-700 bg-gray-900 hover:bg-green-600 hover:text-black text-green-400 py-4 rounded text-lg transition-all" data-lang="km">Cambodia (ភាសាខ្មែរ)</button>
+          <button class="main-lang-btn border border-green-700 bg-gray-900 hover:bg-green-600 hover:text-black text-green-400 py-4 rounded text-lg transition-all" data-lang="ar">Arabic (العربية)</button>
+          <button class="main-lang-btn border border-green-700 bg-gray-900 hover:bg-green-600 hover:text-black text-green-400 py-4 rounded text-lg transition-all" data-lang="es">Spanish (Español)</button>
+        </div>
+      </div>
+      
+      <button id="openModalBtn" data-i18n="get_signals" class="hidden bg-transparent border-2 border-green-400 text-green-400 px-8 py-3 text-lg hover:bg-green-400 hover:text-black transition-all duration-300 active:scale-95 shadow-lg shadow-green-500/20 hover:shadow-green-500/40">
+        GET AI SIGNALS
+      </button>
+    </div>
+
+    <div id="app-container" class="hidden min-h-screen container mx-auto p-4 md:p-8">
+      <div class="w-full bg-gray-900 border border-green-700/50 rounded p-2 mb-4 flex justify-between items-center text-[10px] sm:text-xs font-mono shadow-[0_0_15px_rgba(57,255,20,0.1)]">
+        <div class="flex items-center gap-1 sm:gap-2"><span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse"></span> <span class="hidden sm:inline">API:</span> SECURE</div>
+        <div class="text-yellow-500 font-bold tracking-widest"><i class="fas fa-fire mr-1 text-orange-500"></i><span data-i18n="streak">STREAK:</span> <span id="global-streak">0</span> <span data-i18n="wins">WINS</span></div>
+        <div class="flex items-center gap-1 sm:gap-2"><span data-i18n="ping">PING:</span> <span id="ping-value" class="text-green-400">12</span>ms</div>
+      </div>
+      <div class="w-full flex justify-end items-center gap-4 mb-4">
+        <button id="admin-panel-btn" class="hidden bg-yellow-600 text-white px-4 py-2 text-sm rounded-md hover:bg-yellow-500 transition-colors active:scale-95">
+          <i class="fas fa-user-shield mr-2"></i><span data-i18n="admin_panel">Admin Panel</span>
+        </button>
+        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 text-sm rounded-md hover:bg-red-500 transition-colors active:scale-95">
+          <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </button>
+      </div>
+
+      <div id="live-feed-section" class="mb-8">
+        <h3 class="text-center text-xl mb-4 tracking-widest" data-i18n="top_winners">// TOP WINNERS NOW //</h3>
+        <div id="live-feed-container" class="h-24 bg-black/30 border border-green-800 rounded-md p-2 flex items-center space-x-4 overflow-x-hidden"></div>
+      </div>
+
+      <!-- VIP SECTION -->
+      <div id="vip-section-wrapper" class="mb-16 border-b border-yellow-700/50 pb-10">
+        <h2 class="text-3xl md:text-4xl text-center mb-8 tracking-widest text-yellow-500 animate-pulse" data-i18n="vip_title">// VIP EXCLUSIVE //</h2>
+        
+        <!-- Locked State -->
+        <div id="vip-locked" class="max-w-md mx-auto bg-[#1a1500] border-2 border-yellow-600 rounded-lg p-6 text-center shadow-[0_0_20px_rgba(202,138,4,0.2)]">
+           <i class="fas fa-lock text-5xl text-yellow-500 mb-4 drop-shadow-[0_0_8px_rgba(202,138,4,0.8)]"></i>
+           <p class="text-gray-300 mb-6 text-sm" data-i18n="vip_locked_desc">Enter the VIP code to unlock exclusive strategies and 99.9% accurate signals.</p>
+           <input type="password" id="vip-code-input" class="w-full bg-black border border-yellow-700 text-yellow-500 rounded p-3 text-center mb-4 focus:outline-none focus:border-yellow-500" placeholder="VIP Code">
+           <button id="vip-unlock-btn" class="w-full bg-yellow-600 text-black font-bold py-3 hover:bg-yellow-500 transition-all rounded active:scale-95" data-i18n="vip_unlock">UNLOCK VIP</button>
+           <p id="vip-error" class="text-red-500 text-sm mt-2 hidden" data-i18n="vip_error">Invalid VIP Code</p>
+        </div>
+
+        <!-- Unlocked State -->
+        <div id="vip-unlocked" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+           <div class="bg-[#1a1500] border border-yellow-600 rounded-lg p-4 shadow-[0_0_15px_rgba(202,138,4,0.15)] flex flex-col">
+             <h3 class="text-yellow-500 text-xl font-bold mb-2">⭐ VIP Aviator</h3>
+             <div class="text-sm text-gray-300 mb-4 flex-grow"><strong class="text-yellow-400">Strategy:</strong> <br><span data-i18n="strat_aviator"></span></div>
+             <div id="vip-aviator-signal" class="text-center text-white text-3xl font-mono mb-4 h-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] flex items-center justify-center"></div>
+             <button class="vip-get-signal-btn w-full bg-yellow-600 text-black font-bold py-3 rounded hover:bg-yellow-500 mt-auto" data-i18n="vip_get_signal" data-game="aviator">GET VIP SIGNAL</button>
+           </div>
+           
+           <div class="bg-[#1a1500] border border-yellow-600 rounded-lg p-4 shadow-[0_0_15px_rgba(202,138,4,0.15)] flex flex-col">
+             <h3 class="text-yellow-500 text-xl font-bold mb-2">⭐ VIP Mines</h3>
+             <div class="text-sm text-gray-300 mb-4 flex-grow"><strong class="text-yellow-400">Strategy:</strong> <br><span data-i18n="strat_mines"></span></div>
+             <div id="vip-mines-signal" class="mb-4 h-32 flex items-center justify-center"></div>
+             <button class="vip-get-signal-btn w-full bg-yellow-600 text-black font-bold py-3 rounded hover:bg-yellow-500 mt-auto" data-i18n="vip_get_signal" data-game="mines">GET VIP SIGNAL</button>
+           </div>
+           
+           <div class="bg-[#1a1500] border border-yellow-600 rounded-lg p-4 shadow-[0_0_15px_rgba(202,138,4,0.15)] flex flex-col">
+             <h3 class="text-yellow-500 text-xl font-bold mb-2">⭐ VIP Penalty</h3>
+             <div class="text-sm text-gray-300 mb-4 flex-grow"><strong class="text-yellow-400">Strategy:</strong> <br><span data-i18n="strat_penalty"></span></div>
+             <div id="vip-penalty-signal" class="text-center text-white text-xl font-mono mb-4 h-10 flex items-center justify-center"></div>
+             <button class="vip-get-signal-btn w-full bg-yellow-600 text-black font-bold py-3 rounded hover:bg-yellow-500 mt-auto" data-i18n="vip_get_signal" data-game="penalty">GET VIP SIGNAL</button>
+           </div>
+           
+           <div class="bg-[#1a1500] border border-yellow-600 rounded-lg p-4 shadow-[0_0_15px_rgba(202,138,4,0.15)] flex flex-col">
+             <h3 class="text-yellow-500 text-xl font-bold mb-2">⭐ VIP Apple</h3>
+             <div class="text-sm text-gray-300 mb-4 flex-grow"><strong class="text-yellow-400">Strategy:</strong> <br><span data-i18n="strat_apple"></span></div>
+             <div id="vip-apple-signal" class="text-center text-white text-2xl font-mono mb-4 h-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] flex items-center justify-center"></div>
+             <button class="vip-get-signal-btn w-full bg-yellow-600 text-black font-bold py-3 rounded hover:bg-yellow-500 mt-auto" data-i18n="vip_get_signal" data-game="apple">GET VIP SIGNAL</button>
+           </div>
+           
+           <div class="bg-[#1a1500] border border-yellow-600 rounded-lg p-4 shadow-[0_0_15px_rgba(202,138,4,0.15)] flex flex-col">
+             <h3 class="text-yellow-500 text-xl font-bold mb-2">⭐ VIP Chicken</h3>
+             <div class="text-sm text-gray-300 mb-4 flex-grow"><strong class="text-yellow-400">Strategy:</strong> <br><span data-i18n="strat_chicken"></span></div>
+             <div id="vip-chicken-signal" class="text-center text-white text-2xl font-mono mb-4 h-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] flex items-center justify-center"></div>
+             <button class="vip-get-signal-btn w-full bg-yellow-600 text-black font-bold py-3 rounded hover:bg-yellow-500 mt-auto" data-i18n="vip_get_signal" data-game="chicken">GET VIP SIGNAL</button>
+           </div>
+        </div>
+      </div>
+
+      <div id="signals-section" class="">
+        <h2 class="text-3xl md:text-4xl text-center mb-10 tracking-widest" data-i18n="available_signals">// AVAILABLE AI SIGNALS //</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="aviator">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqBdX8SuaC1Ws7ZYuCVQstQ4qRi9A_3SWujg&s" alt="Aviator" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow" data-i18n="game_aviator">Aviator predictor</h3>
+              <p id="stats-aviator" class="text-sm text-gray-400 mb-3 font-mono leading-tight" data-i18n="loading">// Loading...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300" data-i18n="activate">ACTIVATE</button>
+            </div>
+          </div>
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="mines">
+            <img src="https://rotativka.com/en/wp-content/uploads/sites/3/2021/06/Mines-Demo.jpg" alt="Mines" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow" data-i18n="game_mines">Mines predictor</h3>
+              <p id="stats-mines" class="text-sm text-gray-400 mb-3 font-mono leading-tight" data-i18n="loading">// Loading...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300" data-i18n="activate">ACTIVATE</button>
+            </div>
+          </div>
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="penalty">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThYP5CGxc52hWd4ToMHI8MIJhun5BEjHh5LQ&s" alt="Penalty" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow" data-i18n="game_penalty">Penalty predictor</h3>
+              <p id="stats-penalty" class="text-sm text-gray-400 mb-3 font-mono leading-tight" data-i18n="loading">// Loading...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300" data-i18n="activate">ACTIVATE</button>
+            </div>
+          </div>
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="apple">
+            <img src="https://play-lh.googleusercontent.com/ezAY-TvV3PlhYWLs8k8czRjWWSdBwFtPrw72fNpS8p6wByC0xBG-Dgt0K5ojieZXrg" alt="Apple" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow" data-i18n="game_apple">Apple predictor</h3>
+              <p id="stats-apple" class="text-sm text-gray-400 mb-3 font-mono leading-tight" data-i18n="loading">// Loading...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300" data-i18n="activate">ACTIVATE</button>
+            </div>
+          </div>
+          <div class="signal-card bg-[#0d0d0d] border border-green-700 rounded-lg overflow-hidden flex flex-col" data-game="chicken">
+            <img src="https://cdn6.aptoide.com/imgs/1/0/2/1023a04c18a7a91673200703af12a58f_icon.png" alt="Chicken" class="w-full h-48 object-cover"/>
+            <div class="p-4 flex flex-col flex-grow text-center">
+              <h3 class="text-lg font-bold mb-2 flex-grow" data-i18n="game_chicken">Chicken predictor</h3>
+              <p id="stats-chicken" class="text-sm text-gray-400 mb-3 font-mono leading-tight" data-i18n="loading">// Loading...</p>
+              <button class="activate-btn w-full mt-auto bg-green-600 text-black px-4 py-2 hover:bg-green-500 transition-all duration-300" data-i18n="activate">ACTIVATE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="game-view" class="hidden">
+        <!-- AVIATOR -->
+        <div id="game-screen-aviator" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4 pt-16 pb-8">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl sm:text-4xl text-center mb-4" data-i18n="title_aviator">AVIATOR AI PREDICTOR</h3>
+          <div class="mb-2 py-4"><p id="aviator-multiplier" class="text-7xl md:text-9xl font-mono text-center text-white transition-colors duration-500">x1.00</p></div>
+          <p id="aviator-bet-suggestion" class="text-center text-yellow-400 h-8 my-4 text-sm sm:text-xl font-bold"></p>
+          <button id="aviator-get-signal-btn" class="w-full max-w-md bg-green-600 text-black hover:bg-green-500 px-6 py-3 text-lg transition-all duration-300 active:scale-95 rounded-md" data-i18n="get_signal">Get Signal</button>
+          <button id="aviator-get-another-btn" class="hidden w-full max-w-md bg-yellow-500 text-black px-6 py-3 text-lg hover:bg-yellow-400 transition-all duration-300 active:scale-95 rounded-md mt-4" data-i18n="get_another">GET ANOTHER</button>
+          <div id="aviator-console" class="game-console w-full max-w-md border rounded-md mt-6 p-2 font-mono text-xs overflow-y-auto"><div></div></div>
+        </div>
+
+        <!-- MINES -->
+        <div id="game-screen-mines" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4 pt-16 pb-8">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl sm:text-4xl text-center mb-6" data-i18n="title_mines">MINES AI PREDICTOR</h3>
+          <div class="flex flex-col sm:flex-row gap-6 mb-6 w-full max-w-lg">
+            <div class="relative flex-1" data-select-id="grid-size">
+              <label class="block text-sm text-gray-400 mb-1" data-i18n="grid_size">Grid Size</label>
+              <button class="custom-select-trigger w-full bg-gray-900 border border-green-700 rounded p-3 flex justify-between"><span class="selected-option">5x5</span></button>
+              <div class="custom-select-options hidden absolute top-full mt-1 bg-gray-900 border border-green-700 rounded-md z-10 overflow-hidden w-full">
+                <div class="p-2 cursor-pointer hover:bg-green-800">5x5</div>
+              </div>
+            </div>
+            <div class="relative flex-1" data-select-id="mine-count">
+              <label class="block text-sm text-gray-400 mb-1" data-i18n="mine_count_label">Mine Count</label>
+              <button class="custom-select-trigger w-full bg-gray-900 border border-green-700 rounded p-3 flex justify-between"><span class="selected-option">3</span></button>
+              <div class="custom-select-options hidden absolute top-full mt-1 bg-gray-900 border border-green-700 rounded-md z-10 w-full">
+                <div class="p-2 cursor-pointer hover:bg-green-800">3</div>
+              </div>
+            </div>
+          </div>
+          <div id="mines-grid-container" class="w-full max-w-md aspect-square mb-6"></div>
+          <p id="mines-bet-suggestion" class="text-center text-yellow-400 h-8 my-4 text-sm sm:text-xl font-bold"></p>
+          <button id="mines-get-signal-btn" class="w-full max-w-md bg-green-600 text-black hover:bg-green-500 px-6 py-3 text-lg transition-all duration-300 rounded-md" data-i18n="get_signal">Get Signal</button>
+          <button id="mines-get-another-btn" class="hidden w-full max-w-md bg-yellow-500 text-black px-6 py-3 mt-4 text-lg rounded-md" data-i18n="get_another">GET ANOTHER</button>
+          <div id="mines-console" class="game-console w-full max-w-md border rounded-md mt-6 p-2 font-mono text-xs overflow-y-auto"><div></div></div>
+        </div>
+
+        <!-- PENALTY -->
+        <div id="game-screen-penalty" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4 pt-16 pb-8">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl sm:text-4xl text-center mb-6" data-i18n="title_penalty">PENALTY PREDICTOR</h3>
+          <div class="relative w-full max-w-lg h-64 md:h-80 bg-gray-900/20 border-2 border-gray-600 mb-6">
+            <div data-zone="1" class="penalty-target-zone absolute top-4 left-4 w-16 h-16 rounded-full"></div>
+            <div data-zone="2" class="penalty-target-zone absolute top-4 right-4 w-16 h-16 rounded-full"></div>
+            <div data-zone="3" class="penalty-target-zone absolute top-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full"></div>
+            <div data-zone="4" class="penalty-target-zone absolute bottom-4 left-4 w-16 h-16 rounded-full"></div>
+            <div data-zone="5" class="penalty-target-zone absolute bottom-4 right-4 w-16 h-16 rounded-full"></div>
+          </div>
+          <p id="penalty-bet-suggestion" class="text-center text-yellow-400 h-8 my-4 text-sm font-bold"></p>
+          <button id="penalty-get-signal-btn" class="w-full max-w-md bg-green-600 text-black hover:bg-green-500 px-6 py-3 rounded-md" data-i18n="get_signal">Get Signal</button>
+          <button id="penalty-start-new-game-btn" class="hidden w-full max-w-md bg-yellow-500 text-black px-6 py-3 mt-4 rounded-md" data-i18n="next">Next</button>
+          <div id="penalty-console" class="game-console w-full max-w-md border rounded-md mt-6 p-2 font-mono text-xs overflow-y-auto"><div></div></div>
+        </div>
+
+        <!-- APPLE -->
+        <div id="game-screen-apple" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl mb-4 mt-8" data-i18n="title_apple">APPLE PREDICTOR</h3>
+          <div class="flex-grow flex items-center justify-center my-6"><p id="apple-signal-display" class="text-9xl font-mono text-white">#</p></div>
+          <p id="apple-bet-suggestion" class="text-center text-yellow-400 h-8 font-bold mb-4"></p>
+          <button id="apple-get-signal-btn" class="w-full max-w-md bg-green-600 text-black py-3 rounded-md" data-i18n="get_signal">Get Signal</button>
+          <button id="apple-start-new-game-btn" class="hidden w-full max-w-md bg-yellow-500 py-3 mt-4 rounded-md" data-i18n="next">Next</button>
+          <div id="apple-console" class="game-console w-full max-w-md border mt-6 p-2 overflow-y-auto"><div></div></div>
+        </div>
+
+        <!-- CHICKEN -->
+        <div id="game-screen-chicken" class="game-screen hidden relative min-h-[60vh] flex flex-col items-center justify-center bg-black/30 border border-green-800 rounded-md p-4">
+          <button class="back-to-signals-btn absolute top-4 right-4 text-gray-400 hover:text-white transition-colors text-4xl leading-none">&times;</button>
+          <h3 class="game-title text-3xl mb-4 mt-8" data-i18n="title_chicken">CHICKEN STRAT</h3>
+          <div id="chicken-road-viewport" class="w-full h-24 relative rounded-md border-y-4 border-gray-500 mb-4 max-w-md mx-auto">
+            <div id="chicken-road-track" class="h-full relative flex items-center"></div>
+            <img id="chicken-icon" src="https://iili.io/FvIoXhg.webp" class="absolute h-16 w-16 top-1/2" alt="Chicken"/>
+          </div>
+          <p id="chicken-bet-suggestion" class="text-center text-yellow-400 h-8 font-bold mb-4"></p>
+          <button id="chicken-get-signal-btn" class="w-full max-w-md bg-green-600 text-black py-3 rounded-md" data-i18n="get_signal">Get Signal</button>
+          <button id="chicken-get-another-btn" class="hidden w-full max-w-md bg-yellow-500 py-3 mt-4 rounded-md" data-i18n="next">Next</button>
+          <div id="chicken-console" class="game-console w-full max-w-md border mt-6 p-2 overflow-y-auto"><div></div></div>
+        </div>
+      </div>
+
+      <div id="admin-panel" class="hidden mt-12 mb-8 text-white">...</div>
+    </div>
+
+    <!-- Modals -->
+    <div id="accessModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+      <div id="modalContainer" class="bg-[#0d0d0d] border border-green-500 rounded-lg p-6 w-full max-w-sm text-center">
+        <div id="formContent">
+          <p class="blinking-red text-sm mb-4" data-i18n="daily_code">// Enter Daily Code //</p>
+          <input type="text" id="accessCode" class="hacker-input w-full bg-gray-900 border border-green-600 text-green-300 rounded p-3 text-center mb-2" placeholder="Access code" data-i18n-placeholder="access_placeholder"/>
+          <p id="errorMessage" class="text-red-500 h-5 mt-2 text-sm"></p>
+          <button id="validateBtn" class="mt-4 w-full bg-green-600 text-black py-2 hover:bg-green-500" data-i18n="validate">VALIDATE</button>
+        </div>
+        <div id="statusContent" class="hidden h-36 flex items-center justify-center"><p id="statusText" class="text-2xl animate-pulse"></p></div>
+      </div>
+    </div>
+
+    <div id="scanningOverlay" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-[60] hidden flex flex-col items-center justify-center font-mono">
+      <div class="text-green-500 text-6xl mb-6"><i class="fas fa-satellite-dish animate-pulse"></i></div>
+      <h2 class="text-xl sm:text-2xl text-green-400 mb-2 tracking-widest text-center" data-i18n="intercepting">// INTERCEPTING 1XBET API //</h2>
+      <div class="w-64 h-4 border border-green-500 p-0.5 mb-4 relative drop-shadow-[0_0_8px_rgba(57,255,20,0.8)]">
+          <div id="scanProgressBar" class="h-full bg-green-500 w-0 transition-all duration-100"></div>
+      </div>
+      <p id="scanStatus" class="text-sm text-gray-400 text-center" data-i18n="scan_status_init">Bypassing firewall...</p>
+    </div>
+
+    <div id="depositModal" class="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4 hidden">
+      <div class="bg-[#0d0d0d] border border-red-500 rounded-lg p-6 md:p-8 w-full max-w-md relative shadow-[0_0_30px_rgba(239,68,68,0.3)] text-center">
+        <button id="closeDepositModalBtn" class="absolute top-2 right-3 text-gray-500 hover:text-red-400 text-4xl leading-none transition-colors">&times;</button>
+        <div class="blinking-red text-5xl mb-4"><i class="fas fa-exclamation-triangle"></i></div>
+        <h2 class="text-2xl text-red-500 mb-4 font-bold tracking-widest" data-i18n="deposit_title">// API SYNC LOST //</h2>
+        <p class="text-gray-300 mb-6 text-sm">
+          To maintain AI synchronization and continue receiving 98%+ accurate signals for <span class="text-white font-bold">1xBet</span>, a new deposit on your existing account is required to refresh session tokens.
+        </p>
+        <a href="https://indi-1xbet.com/en/office/recharge" target="_blank" class="block w-full bg-blue-600 text-white font-bold px-6 py-4 rounded hover:bg-blue-500 transition-all active:scale-95 mb-6 shadow-[0_0_15px_rgba(37,99,235,0.5)]">
+          <i class="fas fa-coins mr-2"></i> <span data-i18n="deposit_btn">DEPOSIT ON 1XBET</span>
+        </a>
+        <div class="border-t border-gray-800 pt-6">
+          <label class="block text-sm text-gray-400 mb-2" data-i18n="verify_msg">Message Admin to get Access Code after deposit:</label>
+          <input type="text" id="txIdInput" class="hacker-input w-full bg-gray-900 border border-gray-700 text-green-300 rounded p-3 text-center focus:outline-none mb-3" placeholder="Enter Access Code">
+          <button id="verifyDepositBtn" class="w-full bg-green-700 text-black font-bold px-6 py-3 hover:bg-green-600 transition-all active:scale-95 rounded" data-i18n="verify_btn">
+            VERIFY ACCESS CODE
+          </button>
+          <p id="depositStatus" class="font-mono text-sm mt-3 h-4"></p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const i18n = {
+        en: {
+          select_language: "// SELECT LANGUAGE //",
+          app_title: "AI PREDICTOR",
+          get_signals: "GET AI SIGNALS",
+          top_winners: "// TOP WINNERS NOW //",
+          available_signals: "// AVAILABLE AI SIGNALS //",
+          activate: "ACTIVATE",
+          daily_code: "// Enter Daily Code //",
+          validate: "VALIDATE",
+          get_signal: "Get Signal",
+          get_another: "GET ANOTHER",
+          next: "Next",
+          deposit_title: "// API SYNC LOST //",
+          deposit_btn: "DEPOSIT ON 1XBET",
+          verify_msg: "Message Admin to get Access Code after deposit:",
+          verify_btn: "VERIFY ACCESS CODE",
+          access_placeholder: "Access code",
+          streak: "STREAK:",
+          wins: "WINS",
+          ping: "PING:",
+          admin_panel: "Admin Panel",
+          game_aviator: "Aviator predictor",
+          game_mines: "Mines predictor",
+          game_penalty: "Penalty predictor",
+          game_apple: "Apple predictor",
+          game_chicken: "Chicken predictor",
+          title_aviator: "AVIATOR AI PREDICTOR",
+          title_mines: "MINES AI PREDICTOR",
+          title_penalty: "PENALTY PREDICTOR",
+          title_apple: "APPLE PREDICTOR",
+          title_chicken: "CHICKEN STRAT",
+          grid_size: "Grid Size",
+          mine_count_label: "Mine Count",
+          intercepting: "// INTERCEPTING 1XBET API //",
+          scan_status_init: "Bypassing firewall...",
+          confidence: "Confidence",
+          expires_in: "Expires in",
+          signal_expired: "// SIGNAL EXPIRED //",
+          window_closed: "The vulnerability window closed.",
+          step_1: "Establishing secure port tunnel...",
+          step_2: "Intercepting live game hashes...",
+          step_3: "Applying neural network logic...",
+          step_4: "Signal successfully cracked!",
+          scan_success: "> ✅ SUCCESS: Vulnerability exploited. Signal Acquired.",
+          signal_aviator: "Signal: Cash out at",
+          signal_mines_safe: "5 Safe Cells Revealed",
+          signal_penalty_zone: "Target Zone",
+          signal_apple_col: "Select column",
+          signal_chicken_pick: "Safely pick",
+          signal_chicken_times: "times",
+          ai_signal: "AI Signal:",
+          loading: "// Loading...",
+          vip_title: "// EXCLUSIVE VIP SIGNALS //",
+          vip_locked_desc: "Enter the VIP code to unlock exclusive strategies and 99.9% accurate signals.",
+          vip_error: "Invalid VIP Code",
+          vip_unlock: "UNLOCK VIP",
+          vip_get_signal: "GET VIP SIGNAL",
+          strat_aviator: "1. Enter after a crash under 1.20x.<br>2. Wait for 2 blue rounds, then bet.<br>3. Cash out strictly at VIP signal.",
+          strat_mines: "1. Set 3-5 mines.<br>2. After 2 consecutive losses, double your bet.<br>3. Play the edges exclusively.",
+          strat_penalty: "1. If goalie dives left, shoot center next round.<br>2. Wait 3 seconds before shooting.<br>3. Alternate top corners every 3rd bet.",
+          strat_apple: "1. Use zigzag pattern for steps 1 and 2.<br>2. Always click the center for step 3.<br>3. Cash out immediately when you reach step 3.",
+          strat_chicken: "1. Algorithm favors short distances.<br>2. Always pick the center bone first.<br>3. Pick 3 bones total and cash out."
+        },
+        es: {
+          select_language: "// SELECCIONAR IDIOMA //",
+          app_title: "PREDICTOR IA",
+          get_signals: "OBTENER SEÑALES",
+          top_winners: "// GANADORES AHORA //",
+          available_signals: "// SEÑALES DISPONIBLES //",
+          activate: "ACTIVAR",
+          daily_code: "// Ingrese el Código Diario //",
+          validate: "VALIDAR",
+          get_signal: "Obtener Señal",
+          get_another: "OTRA SEÑAL",
+          next: "Siguiente",
+          deposit_title: "// SINCRONIZACIÓN PERDIDA //",
+          deposit_btn: "DEPOSITAR EN 1XBET",
+          verify_msg: "Mensaje al Admin para el Código tras el depósito:",
+          verify_btn: "VERIFICAR CÓDIGO",
+          access_placeholder: "Código de acceso",
+          streak: "RACHA:",
+          wins: "VICS",
+          ping: "PING:",
+          admin_panel: "Panel Admin",
+          game_aviator: "Predictor Aviator",
+          game_mines: "Predictor Mines",
+          game_penalty: "Predictor Penalty",
+          game_apple: "Predictor Apple",
+          game_chicken: "Predictor Chicken",
+          title_aviator: "PREDICTOR IA AVIATOR",
+          title_mines: "PREDICTOR IA MINES",
+          title_penalty: "PREDICTOR PENALTY",
+          title_apple: "PREDICTOR APPLE",
+          title_chicken: "ESTRATEGIA CHICKEN",
+          grid_size: "Tamaño",
+          mine_count_label: "Nro de Minas",
+          intercepting: "// INTERCEPTANDO API 1XBET //",
+          scan_status_init: "Evadiendo firewall...",
+          confidence: "Confianza",
+          expires_in: "Expira en",
+          signal_expired: "// SEÑAL EXPIRADA //",
+          window_closed: "La ventana de vulnerabilidad se cerró.",
+          step_1: "Estableciendo túnel seguro...",
+          step_2: "Interceptando hashes en vivo...",
+          step_3: "Aplicando lógica neuronal...",
+          step_4: "¡Señal descifrada con éxito!",
+          scan_success: "> ✅ ÉXITO: Vulnerabilidad explotada. Señal Adquirida.",
+          signal_aviator: "Señal: Retira en",
+          signal_mines_safe: "5 Celdas Seguras Reveladas",
+          signal_penalty_zone: "Zona Objetivo",
+          signal_apple_col: "Selec. columna",
+          signal_chicken_pick: "Elige seguro",
+          signal_chicken_times: "veces",
+          ai_signal: "Señal IA:",
+          loading: "// Cargando...",
+          vip_title: "// SEÑALES VIP EXCLUSIVAS //",
+          vip_locked_desc: "Ingrese el código VIP para desbloquear estrategias exclusivas y un 99.9% de precisión.",
+          vip_error: "Código VIP incorrecto",
+          vip_unlock: "DESBLOQUEAR VIP",
+          vip_get_signal: "OBTENER SEÑAL VIP",
+          strat_aviator: "1. Entra luego de un crash bajo 1.20x.<br>2. Espera 2 rondas azules y apuesta.<br>3. Retírate en la señal VIP.",
+          strat_mines: "1. Pon 3-5 minas.<br>2. Luego de 2 pérdidas, dobla tu apuesta.<br>3. Juega exclusivamente en los bordes.",
+          strat_penalty: "1. Si el arquero salta a la izquierda, patea al centro.<br>2. Espera 3 segundos antes de patear.<br>3. Alterna las esquinas superiores cada 3 apuestas.",
+          strat_apple: "1. Usa el patrón zigzag en los pasos 1 y 2.<br>2. Haz clic en el centro en el paso 3.<br>3. Retírate al llegar al paso 3.",
+          strat_chicken: "1. El algoritmo favorece distancias cortas.<br>2. Elige el hueso central primero.<br>3. Recoge 3 huesos y retira tu dinero."
+        },
+        ar: {
+          select_language: "// اختر اللغة //",
+          app_title: "متنبئ الذكاء الاصطناعي",
+          get_signals: "احصل على الإشارات",
+          top_winners: "// كبار الفائزين الآن //",
+          available_signals: "// الإشارات المتاحة //",
+          activate: "تفعيل",
+          daily_code: "// أدخل الرمز اليومي //",
+          validate: "تحقق",
+          get_signal: "احصل على إشارة",
+          get_another: "إشارة أخرى",
+          next: "التالي",
+          deposit_title: "// فقدت المزامنة //",
+          deposit_btn: "إيداع في 1XBET",
+          verify_msg: "راسل المسؤول للحصول على الرمز بعد الإيداع:",
+          verify_btn: "تحقق من الرمز",
+          access_placeholder: "رمز الدخول",
+          streak: "سلسلة الفوز:",
+          wins: "انتصارات",
+          ping: "بينج:",
+          admin_panel: "لوحة تحكم",
+          game_aviator: "توقع Aviator",
+          game_mines: "توقع Mines",
+          game_penalty: "توقع Penalty",
+          game_apple: "توقع Apple",
+          game_chicken: "توقع Chicken",
+          title_aviator: "توقع ذكاء اصطناعي لـ AVIATOR",
+          title_mines: "توقع ذكاء اصطناعي لـ MINES",
+          title_penalty: "توقع PENALTY",
+          title_apple: "توقع APPLE",
+          title_chicken: "تكتيك CHICKEN",
+          grid_size: "حجم الشبكة",
+          mine_count_label: "عدد الألغام",
+          intercepting: "// جاري اعتراض 1XBET //",
+          scan_status_init: "تجاوز جدار الحماية...",
+          confidence: "الثقة",
+          expires_in: "ينتهي في",
+          signal_expired: "// الإشارة منتهية הצلاحية //",
+          window_closed: "تم إغلاق نافذة الثغرة.",
+          step_1: "تأسيس قناة آمنة...",
+          step_2: "اعتراض الهاش المباشر...",
+          step_3: "تطبيق الشبكة العصبية...",
+          step_4: "تم فك تشفير الإشارة!",
+          scan_success: "> ✅ نجاح: تم اختراق الثغرة. تم الحصول على الإشارة.",
+          signal_aviator: "إشارة: اسحب عند",
+          signal_mines_safe: "تم كشف 5 خلايا بأمان",
+          signal_penalty_zone: "منطقة الهدف",
+          signal_apple_col: "حدد العمود",
+          signal_chicken_pick: "اختر بأمان",
+          signal_chicken_times: "مرات",
+          ai_signal: "إشارة ذكاء اصطناعي:",
+          loading: "// جاري التحميل...",
+          vip_title: "// إشارات VIP حصرية //",
+          vip_locked_desc: "أدخل رمز VIP لفتح استراتيجيات حصرية وإشارات دقيقة بنسبة 99.9%.",
+          vip_error: "رمز VIP خاطئ",
+          vip_unlock: "فتح VIP",
+          vip_get_signal: "احصل على إشارة VIP",
+          strat_aviator: "1. ادخل بعد تحطم أقل من 1.20x.<br>2. انتظر جولتين زرقاء ، ثم راهن.<br>3. اسحب عند إشارة VIP.",
+          strat_mines: "1. ضع 3-5 ألغام.<br>2. بعد خسارتين متتاليتين ، ضاعف رهانك.<br>3. العب على الحواف حصريًا.",
+          strat_penalty: "1. إذا قفز حارس المرمى يسارًا ، سدد في المنتصف.<br>2. انتظر 3 ثوانٍ قبل التسديد.<br>3. قم بتبديل الزوايا العلوية كل 3 رهانات.",
+          strat_apple: "1. استخدم النمط المتعرج للخطوتين 1 و 2.<br>2. انقر دائمًا على المركز للخطوة 3.<br>3. اسحب المال مباشرة عند الخطوة 3.",
+          strat_chicken: "1. الخوارزمية تفضل المسافات القصيرة.<br>2. اختر دائمًا العظم المركزي أولاً.<br>3. اختر 3 عظام إجمالاً واسحب المال."
+        },
+        da: {
+          select_language: "// ژبه غوره کړئ //",
+          app_title: "پیش‌بینی کننده هوش مصنوعی",
+          get_signals: "دریافت سیگنال ها",
+          top_winners: "// برندگان برتر //",
+          available_signals: "// سیگنال های موجود //",
+          activate: "فعال کردن",
+          daily_code: "// کد روزانه خود را وارد کنید //",
+          validate: "تایید",
+          get_signal: "دریافت سیگنال",
+          get_another: "دریافت یکی دیگر",
+          next: "بعدی",
+          deposit_title: "// همگام سازی قطع شد //",
+          deposit_btn: "واریز در 1XBET",
+          verify_msg: "پیام به مدیر برای کد بعد از واریز:",
+          verify_btn: "تایید کد عبور",
+          access_placeholder: "کد عبور",
+          streak: "برد پیاپی:",
+          wins: "بردها",
+          ping: "پینگ:",
+          admin_panel: "پنل ادمین",
+          game_aviator: "پیش‌بینی Aviator",
+          game_mines: "پیش‌بینی Mines",
+          game_penalty: "پیش‌بینی Penalty",
+          game_apple: "پیش‌بینی Apple",
+          game_chicken: "پیش‌بینی Chicken",
+          title_aviator: "پیش‌بینی گر هوش مصنوعی AVIATOR",
+          title_mines: "پیش‌بینی گر هوش مصنوعی MINES",
+          title_penalty: "پیش‌بینی PENALTY",
+          title_apple: "پیش‌بینی APPLE",
+          title_chicken: "استراتژی CHICKEN",
+          grid_size: "اندازه شبکه",
+          mine_count_label: "تعداد مین ها",
+          intercepting: "// در حال رهگیری 1XBET //",
+          scan_status_init: "دور زدن فایروال...",
+          confidence: "اطمینان",
+          expires_in: "انقضا در",
+          signal_expired: "// سیگنال منقضی شد //",
+          window_closed: "پنجره آسیب‌پذیری بسته شد.",
+          step_1: "ایجاد ارتباط امن...",
+          step_2: "رهگیری هش مستقیم...",
+          step_3: "اعمال شبکه عصبی...",
+          step_4: "سیگنال با موفقیت رمزگشایی شد!",
+          scan_success: "> ✅ موفقیت: نفوذ انجام شد. سیگنال دریافت شد.",
+          signal_aviator: "سیگنال: برداشت در",
+          signal_mines_safe: "۵ خانه امن فاش شد",
+          signal_penalty_zone: "منطقه هدف",
+          signal_apple_col: "ستون را انتخاب کنید",
+          signal_chicken_pick: "به طور امن",
+          signal_chicken_times: "بار انتخاب کنید",
+          ai_signal: "سیگنال هوش مصنوعی:",
+          loading: "// در حال بارگذاری...",
+          vip_title: "// سیګنال های اختصاصی VIP //",
+          vip_locked_desc: "کد VIP را برای باز کردن استراتژی ها و سیگنال های دقیق ۹۹.۹٪ وارد کنید.",
+          vip_error: "کد VIP نامعتبر",
+          vip_unlock: "باز کردن VIP",
+          vip_get_signal: "دریافت سیگنال VIP",
+          strat_aviator: "1. بعد از کرش زیر ۱.۲۰ وارد شوید.<br>2. ۲ دور صبر کنید سپس شرط ببندید.<br>3. روی سیگنال VIP برداشت کنید.",
+          strat_mines: "1. ۳ تا ۵ مین قرار دهید.<br>2. بعد از ۲ باخت، شرط را دو برابر کنید.<br>3. فقط در حاشیه‌ها بازی کنید.",
+          strat_penalty: "1. اگر دروازه بان به چپ پرید، دور بعد وسط ضربه بزنید.<br>2. ۳ ثانیه قبل از شوت صبر کنید.<br>3. گوشه‌های بالایی را هر سه شرط تعویض کنید.",
+          strat_apple: "1. از الگوی زیگزاگ برای مراحل ۱ و ۲ استفاده کنید.<br>2. همیشه در مرحله ۳ مرکز را کلیک کنید.<br>3. در مرحله ۳ فوراً برداشت کنید.",
+          strat_chicken: "1. الگوریتم بردهای کوتاه را ترجیح میدهد.<br>2. همیشه ابتدا استخوان وسط را انتخاب کنید.<br>3. ۳ استخوان بردارید و برداشت کنید."
+        },
+        km: {
+          select_language: "// ជ្រើសរើសភាសា //",
+          app_title: "អ្នកទស្សន៍ទាយ AI",
+          get_signals: "ទទួលសញ្ញា AI",
+          top_winners: "// អ្នកឈ្នះកំពូលឥឡូវនេះ //",
+          available_signals: "// សញ្ញា AI ដែលមាន //",
+          activate: "ដំណើរការ",
+          daily_code: "// បញ្ចូលលេខកូដប្រចាំថ្ងៃ //",
+          validate: "បញ្ជាក់",
+          get_signal: "ទទួលសញ្ញា",
+          get_another: "ទទួលមួយទៀត",
+          next: "បន្ទាប់",
+          deposit_title: "// បាត់បង់ការធ្វើសមកាលកម្ម API //",
+          deposit_btn: "ដាក់ប្រាក់នៅ 1XBET",
+          verify_msg: "ផ្ញើសារទៅ Admin ដើម្បីទទួលបានលេខកូដបន្ទាប់ពីដាក់ប្រាក់:",
+          verify_btn: "ផ្ទៀងផ្ទាត់លេខកូដ",
+          access_placeholder: "លេខកូដចូល",
+          streak: "ឈ្នះបន្តបន្ទាប់:",
+          wins: "ដង",
+          ping: "PING:",
+          admin_panel: "ផ្ទាំងគ្រប់គ្រង",
+          game_aviator: "អ្នកទស្សន៍ទាយ Aviator",
+          game_mines: "អ្នកទស្សន៍ទាយ Mines",
+          game_penalty: "អ្នកទស្សន៍ទាយ Penalty",
+          game_apple: "អ្នកទស្សន៍ទាយ Apple",
+          game_chicken: "អ្នកទស្សន៍ទាយ Chicken",
+          title_aviator: "អ្នកទស្សន៍ទាយ AVIATOR AI",
+          title_mines: "អ្នកទស្សន៍ទាយ MINES AI",
+          title_penalty: "អ្នកទស្សន៍ទាយ PENALTY",
+          title_apple: "អ្នកទស្សន៍ទាយ APPLE",
+          title_chicken: "យុទ្ធសាស្រ្ត CHICKEN",
+          grid_size: "ទំហំក្រឡាចត្រង្គ",
+          mine_count_label: "ចំនួនមីន",
+          intercepting: "// កំពុងស្ទាក់ចាប់ 1XBET API //",
+          scan_status_init: "កំពុងរំលងជញ្ជាំងភ្លើង...",
+          confidence: "ទំនុកចិត្ត",
+          expires_in: "ផុតកំណត់ក្នុង",
+          signal_expired: "// សញ្ញាផុតកំណត់ //",
+          window_closed: "បិទវិនដូរប្រហោង។",
+          step_1: "បង្កើតផ្លូវសុវត្ថិភាព...",
+          step_2: "ស្ទាក់ចាប់ហាសហ្គេមបន្តផ្ទាល់...",
+          step_3: "អនុវត្តបណ្ដាញសរសៃប្រសាទ...",
+          step_4: "សញ្ញាត្រូវបំបែកបានជោគជ័យ!",
+          scan_success: "> ✅ ជោគជ័យ៖ សញ្ញាទទួលបាន។",
+          signal_aviator: "សញ្ញា៖ ដកប្រាក់នៅ",
+          signal_mines_safe: "ក្រឡាសុវត្ថិភាព ៥ ត្រូវបានបង្ហាញ",
+          signal_penalty_zone: "តំបន់គោលដៅ",
+          signal_apple_col: "ជ្រើសរើសជួរឈរ",
+          signal_chicken_pick: "ជ្រើសរើសដោយសុវត្ថិភាព",
+          signal_chicken_times: "ដង",
+          ai_signal: "សញ្ញា AI៖",
+          loading: "// កំពុងផ្ទុក...",
+          vip_title: "// សញ្ញា VIP ផ្តាច់មុខ //",
+          vip_locked_desc: "បញ្ចូលលេខកូដ VIP ដើម្បីបើកយុទ្ធសាស្ត្រផ្តាច់មុខ និងសញ្ញាត្រឹមត្រូវ ៩៩.៩%។",
+          vip_error: "លេខកូដ VIP មិនត្រឹមត្រូវ",
+          vip_unlock: "បើក VIP",
+          vip_get_signal: "ទទួលសញ្ញា VIP",
+          strat_aviator: "1. ចូលលេងកំឡុងពេលវគ្គខូចខាត។<br>2. រង់ចាំ 2 ជុំបន្ទាប់មកភ្នាល់។<br>3. ដកប្រាក់ចេញនៅពីក្រោយសញ្ញា VIP។",
+          strat_mines: "1. កំណត់មីន 3-5។<br>2. បន្ទាប់ពីចាញ់ 2 ជុំ បង្កើនប្រាក់ភ្នាល់របស់អ្នក។<br>3. លេងផ្តាច់មុខលើគែម។",
+          strat_penalty: "1. ប្រសិនបើអ្នកចាំទីលោតទៅឆ្វេង ទាត់ទៅកណ្តាល។<br>2. រង់ចាំ 3 វិនាទីមុនពេលទាត់។<br>3. ផ្លាស់ប្តូរទិសដៅសម្រាប់រាល់ការភ្នាល់ទី 3 ។",
+          strat_apple: "1. ប្រើលំនាំហ្ស៊ីកហ្ស៊ីកសម្រាប់ជំហានទី 1 និងទី 2 ។<br>2. តែងតែចុចកណ្តាលសម្រាប់ជំហានទី 3 ។<br>3. ដកប្រាក់ភ្លាមៗនៅពេលអ្នកដល់ជំហានទី 3 ។",
+          strat_chicken: "1. ក្បួនដោះស្រាយពេញចិត្តចម្ងាយខ្លី។<br>2. តែងតែជ្រើសរើសឆ្អឹងកណ្តាលជាមុនសិន។<br>3. ជ្រើសរើសឆ្អឹងចំនួន 3 សរុបហើយដកប្រាក់ចេញ។"
+        }
+      };
+
+      const langSelect = document.getElementById('langSelect');
+      langSelect.addEventListener('change', (e) => {
+        const lang = e.target.value;
+        const bodyStr = lang === 'ar' || lang === 'da' ? 'rtl' : 'ltr';
+        document.body.dir = bodyStr;
+        localStorage.setItem('ai_app_lang', lang);
+        applyLanguage(lang);
+      });
+
+      function applyLanguage(lang) {
+        if (!i18n[lang]) return;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const key = el.getAttribute('data-i18n');
+          if (i18n[lang][key]) {
+            el.innerHTML = i18n[lang][key];
+          }
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+          const key = el.getAttribute('data-i18n-placeholder');
+          if (i18n[lang][key]) {
+            el.setAttribute('placeholder', i18n[lang][key]);
+          }
+        });
+      }
+
+      const savedLang = localStorage.getItem('ai_app_lang') || 'en';
+      langSelect.value = savedLang;
+      langSelect.dispatchEvent(new Event('change'));
+
+      const languageSelectionScreen = document.getElementById('language-selection-screen');
+      const openModalBtn = document.getElementById('openModalBtn');
+
+      document.querySelectorAll('.main-lang-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const lang = e.currentTarget.getAttribute('data-lang');
+          langSelect.value = lang;
+          langSelect.dispatchEvent(new Event('change'));
+          
+          languageSelectionScreen.classList.add('hidden');
+          openModalBtn.classList.remove('hidden');
+        });
+      });
+
+      const mainContent = document.getElementById("main-content");
+      const appContainer = document.getElementById("app-container");
+      const signalsSection = document.getElementById("signals-section");
+      const gameView = document.getElementById("game-view");
+      
+      let globalSignalCount = parseInt(localStorage.getItem('ai_global_signal_count')) || 0;
+      let currentStreak = parseInt(localStorage.getItem('ai_current_streak')) || 0;
+      const MAX_FREE_SIGNALS = 10; // Prompts deposit after 10 tokens used
+
+      // Ping & Streak Update Logic
+      setInterval(() => {
+          const pingEl = document.getElementById("ping-value");
+          if(pingEl) pingEl.innerText = Math.floor(Math.random() * 15 + 8);
+      }, 2000);
+      const updateStreak = () => {
+          const streakEl = document.getElementById('global-streak');
+          if(streakEl) streakEl.innerText = currentStreak;
+      };
+      updateStreak();
+
+      // Countdown Timer Logic
+      function getI18n(key) {
+        const lang = localStorage.getItem('ai_app_lang') || 'en';
+        return i18n[lang]?.[key] || i18n['en'][key];
+      }
+
+      let activeTimerInterval;
+      function showSignalWithTimer(elementId, mainText) {
+          clearInterval(activeTimerInterval);
+          let timeLeft = 45; // urgency countdown
+          const el = document.getElementById(elementId);
+          const confidence = (95 + Math.random() * 4).toFixed(1);
+          
+          function render() {
+              const confText = getI18n('confidence');
+              const expText = getI18n('expires_in');
+              el.innerHTML = `${mainText} <br/><span class="text-xs sm:text-sm text-gray-400 mt-2 inline-block bg-black/50 px-3 py-1 rounded border border-gray-800">${confText}: <span class="text-green-400">${confidence}%</span> <span class="mx-2">|</span> <i class="fas fa-clock mr-1"></i> <span class="text-red-500 font-bold">${expText}: ${timeLeft}s</span></span>`;
+          }
+          render();
+          
+          activeTimerInterval = setInterval(() => {
+              timeLeft--;
+              if(timeLeft <= 0) {
+                  clearInterval(activeTimerInterval);
+                  const expSigText = getI18n('signal_expired');
+                  const closedText = getI18n('window_closed');
+                  el.innerHTML = `<span class="text-red-500 font-bold border border-red-500 px-3 py-1 bg-red-900/20 rounded shadow-[0_0_10px_rgba(239,68,68,0.5)]">${expSigText}</span><br/><span class="text-xs text-gray-500 mt-2 block">${closedText}</span>`;
+              } else {
+                  render();
+              }
+          }, 1000);
+      }
+      
+      // DEPOSIT MODAL LOGIC
+      document.getElementById('closeDepositModalBtn').addEventListener('click', () => {
+          document.getElementById('depositModal').classList.add('hidden');
+          gameView.classList.add('hidden');
+          signalsSection.classList.remove('hidden');
+      });
+
+      document.getElementById('verifyDepositBtn').addEventListener('click', () => {
+          const txInput = document.getElementById('txIdInput').value;
+          const status = document.getElementById('depositStatus');
+          if(txInput !== '1337') {
+              status.textContent = "Error: Invalid Access Code";
+              status.className = "text-red-500 font-mono text-sm mt-3 h-4";
+              return;
+          }
+          status.textContent = "Verifying access code...";
+          status.className = "text-yellow-400 font-mono text-sm mt-3 h-4 animate-pulse";
+          setTimeout(() => {
+              status.textContent = "API Sync Restored! Success.";
+              status.className = "text-green-500 font-mono text-sm mt-3 h-4";
+              globalSignalCount = 0;
+              localStorage.setItem('ai_global_signal_count', 0);
+              setTimeout(() => {
+                  document.getElementById('depositModal').classList.add('hidden');
+                  document.getElementById('txIdInput').value = '';
+                  status.textContent = '';
+              }, 1500);
+          }, 3000);
+      });
+
+      function executeWithAnalysis(btn, consoleOutput, callback) {
+          if (globalSignalCount >= MAX_FREE_SIGNALS) {
+              btn.disabled = false;
+              btn.classList.remove("btn-disabled");
+              document.getElementById('depositModal').classList.remove('hidden');
+              return;
+          }
+          globalSignalCount++;
+          localStorage.setItem('ai_global_signal_count', globalSignalCount);
+          
+          btn.disabled = true;
+          btn.classList.add("btn-disabled");
+          const outputDiv = consoleOutput.querySelector("div");
+          outputDiv.innerHTML = "";
+          
+          const overlay = document.getElementById('scanningOverlay');
+          const progressBar = document.getElementById('scanProgressBar');
+          const statusText = document.getElementById('scanStatus');
+          overlay.classList.remove('hidden');
+          progressBar.style.width = '0%';
+          
+          const steps = [
+              getI18n('step_1'),
+              getI18n('step_2'),
+              getI18n('step_3'),
+              getI18n('step_4')
+          ];
+          
+          let progress = 0;
+          let stepIdx = 0;
+          let scanIntv = setInterval(() => {
+              progress += Math.random() * 15;
+              if(progress > 100) progress = 100;
+              progressBar.style.width = progress + '%';
+              
+              if(progress > 25 && stepIdx === 0) { statusText.innerText = steps[0]; stepIdx++; }
+              if(progress > 50 && stepIdx === 1) { statusText.innerText = steps[1]; stepIdx++; }
+              if(progress > 75 && stepIdx === 2) { statusText.innerText = steps[2]; stepIdx++; }
+              
+              if(progress === 100) {
+                  clearInterval(scanIntv);
+                  statusText.innerText = steps[3];
+                  statusText.classList.add('text-green-500');
+                  
+                  setTimeout(() => {
+                      overlay.classList.add('hidden');
+                      statusText.classList.remove('text-green-500');
+                      
+                      currentStreak++;
+                      localStorage.setItem('ai_current_streak', currentStreak);
+                      updateStreak();
+                      
+                      const p = document.createElement('p');
+                      p.textContent = getI18n('scan_success');
+                      p.className = "text-green-500 font-bold drop-shadow-[0_0_5px_rgba(57,255,20,0.5)]";
+                      outputDiv.appendChild(p);
+                      
+                      callback();
+                  }, 800);
+              }
+          }, 100);
+      }
+
+      // AVIATOR
+      document.getElementById("aviator-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("aviator-console"), () => {
+              const target = (1.1 + Math.random() * 0.89).toFixed(2);
+              showSignalWithTimer("aviator-bet-suggestion", `${getI18n('signal_aviator')} <span class="text-white text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">${target}x</span>`);
+              document.getElementById("aviator-multiplier").textContent = `x${target}`;
+              this.classList.add("hidden");
+              document.getElementById("aviator-get-another-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("aviator-get-another-btn").addEventListener("click", function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("aviator-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // MINES
+      document.getElementById("mines-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("mines-console"), () => {
+              const container = document.getElementById("mines-grid-container");
+              container.innerHTML = "";
+              container.className = "grid grid-cols-5 gap-2 w-full max-w-md aspect-square mb-6";
+              const safe = [];
+              while(safe.length < 5) {
+                  let r = Math.floor(Math.random()*25);
+                  if(!safe.includes(r)) safe.push(r);
+              }
+              for(let i=0; i<25; i++) {
+                  const cell = document.createElement("div");
+                  cell.className = "mine-cell flex items-center justify-center " + (safe.includes(i) ? "safe" : "");
+                  container.appendChild(cell);
+              }
+              showSignalWithTimer("mines-bet-suggestion", `${getI18n('ai_signal')} <span class="text-white">${getI18n('signal_mines_safe')}</span>`);
+              this.classList.add("hidden");
+              document.getElementById("mines-get-another-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("mines-get-another-btn").addEventListener("click", function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("mines-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // PENALTY
+      document.getElementById("penalty-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("penalty-console"), () => {
+              document.querySelectorAll(".penalty-target-zone").forEach(z => z.classList.remove("highlight", "scale-110"));
+              const r = Math.floor(Math.random()*5)+1;
+              const z = document.querySelector(`[data-zone="${r}"]`);
+              if(z) z.classList.add("highlight", "scale-110");
+              showSignalWithTimer("penalty-bet-suggestion", `${getI18n('ai_signal')} ${getI18n('signal_penalty_zone')} <span class="text-white text-xl">${r}</span>`);
+              this.classList.add("hidden");
+              document.getElementById("penalty-start-new-game-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("penalty-start-new-game-btn").addEventListener('click', function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("penalty-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // APPLE
+      document.getElementById("apple-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("apple-console"), () => {
+              const r = Math.floor(Math.random()*5)+1;
+              const d = document.getElementById("apple-signal-display");
+              d.textContent = r;
+              d.classList.add("text-green-500", "shadow-lg");
+              showSignalWithTimer("apple-bet-suggestion", `${getI18n('signal_apple_col')} <span class="text-white text-xl">${r}</span>`);
+              this.classList.add("hidden");
+              document.getElementById("apple-start-new-game-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("apple-start-new-game-btn").addEventListener('click', function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("apple-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // CHICKEN
+      document.getElementById("chicken-get-signal-btn").addEventListener("click", function() {
+          if(this.disabled) return;
+          executeWithAnalysis(this, document.getElementById("chicken-console"), () => {
+              const count = Math.floor(Math.random()*8)+1;
+              showSignalWithTimer("chicken-bet-suggestion", `${getI18n('ai_signal')} ${getI18n('signal_chicken_pick')} <span class="text-white text-xl">${count}</span> ${getI18n('signal_chicken_times')}`);
+              this.classList.add("hidden");
+              document.getElementById("chicken-get-another-btn").classList.remove("hidden");
+          });
+      });
+      document.getElementById("chicken-get-another-btn").addEventListener('click', function(){
+          this.classList.add("hidden");
+          const btn = document.getElementById("chicken-get-signal-btn");
+          btn.classList.remove("hidden");
+          btn.disabled = false;
+          btn.classList.remove("btn-disabled");
+          btn.click();
+      });
+
+      // Navigation
+      document.getElementById("openModalBtn").addEventListener("click", () => {
+         document.getElementById('accessModal').classList.remove('hidden'); 
+      });
+      document.getElementById("validateBtn").addEventListener("click", () => {
+          if(document.getElementById("accessCode").value === "2282" || document.getElementById("accessCode").value === "admin2282") {
+              document.getElementById('formContent').classList.add('hidden');
+              document.getElementById('statusContent').classList.remove('hidden');
+              document.getElementById('statusText').textContent = "Access Granted";
+              setTimeout(() => {
+                  document.getElementById('accessModal').classList.add('hidden');
+                  mainContent.classList.add('hidden');
+                  appContainer.classList.remove('hidden');
+                  document.getElementById('langSelectContainer').classList.remove('hidden');
+              }, 1000);
+          } else {
+              document.getElementById("errorMessage").textContent = "Invalid code";
+          }
+      });
+      
+      document.querySelectorAll(".activate-btn").forEach(btn => {
+         btn.addEventListener("click", e => {
+             const g = e.target.closest('.signal-card').dataset.game;
+             signalsSection.classList.add('hidden');
+             const vipSection = document.getElementById('vip-section-wrapper');
+             if(vipSection) vipSection.classList.add('hidden');
+             gameView.classList.remove('hidden');
+             document.querySelectorAll('.game-screen').forEach(s => s.classList.add('hidden'));
+             document.getElementById('game-screen-'+g).classList.remove('hidden');
+         });
+      });
+      
+      document.querySelectorAll('.back-to-signals-btn').forEach(btn => {
+         btn.addEventListener('click', () => {
+             gameView.classList.add('hidden');
+             signalsSection.classList.remove('hidden');
+             const vipSection = document.getElementById('vip-section-wrapper');
+             if(vipSection) vipSection.classList.remove('hidden');
+         });
+      });
+      
+      // VIP Logic
+      document.getElementById('vip-unlock-btn').addEventListener('click', function() {
+        const code = document.getElementById('vip-code-input').value;
+        if(code === '9999' || code === 'admin9999') {
+          document.getElementById('vip-error').classList.add('hidden');
+          document.getElementById('vip-locked').classList.add('hidden');
+          document.getElementById('vip-unlocked').classList.remove('hidden');
+          
+          Object.assign(document.getElementById('vip-section-wrapper').style, {
+            boxShadow: '0 0 50px rgba(202, 138, 4, 0.2)',
+            background: 'linear-gradient(to bottom, rgba(202,138,4,0.05), transparent)'
+          });
+        } else {
+          document.getElementById('vip-error').classList.remove('hidden');
+        }
+      });
+
+      document.querySelectorAll('.vip-get-signal-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const game = this.dataset.game;
+          this.disabled = true;
+          this.textContent = "...";
+          const d = document.getElementById(`vip-${game}-signal`);
+          d.innerHTML = '<i class="fas fa-cog fa-spin text-yellow-500"></i>';
+          
+          setTimeout(() => {
+             this.disabled = false;
+             this.innerHTML = getI18n('vip_get_signal');
+             if(game === 'aviator') {
+                 d.innerHTML = (2.5 + Math.random() * 5).toFixed(2) + 'x';
+             } else if(game === 'mines') {
+                 d.innerHTML = '<div class="grid grid-cols-5 gap-1 mx-auto w-fit bg-gray-900 border border-green-700/50 p-1 rounded">';
+                 const safeCells = [];
+                 while(safeCells.length < 5) {
+                   const rand = Math.floor(Math.random() * 25);
+                   if(!safeCells.includes(rand)) safeCells.push(rand);
+                 }
+                 for(let i=0; i<25; i++) { 
+                     if(safeCells.includes(i)) {
+                         d.innerHTML += '<div class="w-4 h-4 bg-lime-500 rounded-sm"></div>';
+                     } else {
+                         d.innerHTML += '<div class="w-4 h-4 bg-gray-700 rounded-sm"></div>';
+                     }
+                 }
+                 d.innerHTML += '</div>';
+             } else if(game === 'penalty') {
+                 const zones = ['Top Left', 'Top Right', 'Center', 'Bottom Left', 'Bottom Right'];
+                 d.innerHTML = zones[Math.floor(Math.random()*zones.length)];
+             } else if(game === 'apple') {
+                 d.innerHTML = '<span class="text-white text-lg">Col ' + (Math.floor(Math.random()*5)+1) + ' -> Col ' + (Math.floor(Math.random()*5)+1) + '</span>';
+             } else if(game === 'chicken') {
+                 d.innerHTML = '<span class="text-white text-lg">Pick ' + (Math.floor(Math.random()*2)+2) + ' Safely</span>';
+             }
+          }, 1500);
+        });
+      });
+
+      // Fill winners feed
+      setInterval(() => {
+         const d = document.createElement('div');
+         d.className = "flex-shrink-0 flex items-center space-x-3 bg-gray-900/50 p-2 rounded-md w-48 mx-2 text-xs font-bold";
+         d.innerHTML = `<span class="text-gray-200">User${Math.floor(Math.random()*9000)+1000}</span> <span class="text-lime-300">$${Math.floor(Math.random()*5000)+100}</span>`;
+         const feed = document.getElementById('live-feed-container');
+         feed.prepend(d);
+         if(feed.children.length > 5) feed.lastChild.remove();
+      }, 3000);
+    </script>
+  </body>
+</html>
